@@ -110,7 +110,7 @@ function updateProgress() {
   document.getElementById("ana-count").textContent = anas + "/" + TOTAL;
   document.getElementById("img-bar").style.width = (imgs / TOTAL * 100) + "%";
   document.getElementById("ana-bar").style.width = (anas / TOTAL * 100) + "%";
-  const readyN = PRODUCTS.filter(p => (genImages[p.id] && genImages[p.id].filter(Boolean).length > 0) || profiles[p.id]).length;
+  const readyN = PRODUCTS.filter(p => getImgList(p.id).length > 0 || profiles[p.id]).length;
   document.getElementById("btn-tab-ready").textContent = "Generados" + (readyN > 0 ? " (" + readyN + ")" : "");
 }
 
@@ -134,7 +134,7 @@ function renderCats() {
   document.getElementById("cat-list").innerHTML = cats.map(cat => {
     const count = cat === "all" ? TOTAL : PRODUCTS.filter(p => p.category === cat).length;
     const imgs = cat === "all"
-      ? Object.values(genImages).reduce((n, arr) => n + (arr ? arr.filter(Boolean).length : 0), 0)
+      ? Object.keys(genImages).reduce((n, id) => n + getImgList(id).length, 0)
       : PRODUCTS.filter(p => p.category === cat).reduce((n, p) => n + getImgList(p.id).length, 0);
     const active = activeFilter === cat;
     return "<button onclick=\"setFilter('" + cat + "')\" class=\"w-full flex items-center justify-between px-2 py-1.5 rounded-lg text-xs " + (active ? "bg-violet-900/40 text-violet-300 border border-violet-800/50" : "text-zinc-400 hover:bg-zinc-800") + "\">" +
