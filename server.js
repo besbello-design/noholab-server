@@ -132,11 +132,19 @@ app.post("/api/generate-image", async (req, res) => {
     const shot = catShots[shotType] || catShots.model1;
     const prompt = `${shot} Product name: ${title}. Final result must look like a luxury PD Paola campaign photo: clean, minimal, elegant, professional.`;
 
-    // Fetch the original image
-    const imgRes = await fetch(imageUrl);
-    const imgBuffer = await imgRes.buffer();
-    const contentType = imgRes.headers.get("content-type") || "image/jpeg";
-    const ext = contentType.includes("png") ? "png" : "jpeg";
+    // Get image buffer - either from base64 (sent by browser) or fetch from URL
+    let imgBuffer, ext;
+    if (imageBase64) {
+      // Browser sent base64 data URL
+      const matches = imageBase64.match(/^data:image\/([a-zA-Z]+);base64,(.+)$/);
+      ext = matches ? matches[1] : "jpeg";
+      imgBuffer = Buffer.from(matches ? matches[2] : imageBase64, "base64");
+    } else {
+      const imgRes = await fetch(imageUrl);
+      imgBuffer = await imgRes.buffer();
+      const contentType = imgRes.headers.get("content-type") || "image/jpeg";
+      ext = contentType.includes("png") ? "png" : "jpeg";
+    }
 
     const form = new FormData();
     form.append("model", "gpt-image-1");
