@@ -309,24 +309,12 @@ async function generateImages(id) {
     if (btn) btn.textContent = "⏳ " + (i + 1) + "/6 " + SHOT_LABELS[shotType] + "…";
     try {
       if (i > 0) await sleep(6000);
-      // Fetch image in browser and send as base64 to avoid server-side CDN blocks
-      let imageData = null;
-      try {
-        const imgFetch = await fetch(srcImg);
-        const blob = await imgFetch.blob();
-        imageData = await new Promise((resolve) => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result);
-          reader.readAsDataURL(blob);
-        });
-      } catch(e) {
-        log("✗ No se pudo cargar imagen: " + e.message, "error");
-        continue;
-      }
+      // Use server-side proxy URL so the server fetches it internally
+      const proxiedUrl = "/api/proxy-image?url=" + encodeURIComponent(srcImg);
       const res = await fetch("/api/generate-image", {
         method: "POST",
         headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({imageBase64: imageData, category: p.category, title: p.title, shotType})
+        body: JSON.stringify({imageUrl: proxiedUrl, category: p.category, title: p.title, shotType})
       });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
