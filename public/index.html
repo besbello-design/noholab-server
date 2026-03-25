@@ -309,10 +309,24 @@ async function generateImages(id) {
     if (btn) btn.textContent = "⏳ " + (i + 1) + "/6 " + SHOT_LABELS[shotType] + "…";
     try {
       if (i > 0) await sleep(6000);
+      // Fetch image in browser and send as base64 to avoid server-side CDN blocks
+      let imageData = null;
+      try {
+        const imgFetch = await fetch(srcImg);
+        const blob = await imgFetch.blob();
+        imageData = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result);
+          reader.readAsDataURL(blob);
+        });
+      } catch(e) {
+        log("✗ No se pudo cargar imagen: " + e.message, "error");
+        continue;
+      }
       const res = await fetch("/api/generate-image", {
         method: "POST",
         headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({imageUrl: srcImg, category: p.category, title: p.title, shotType})
+        body: JSON.stringify({imageBase64: imageData, category: p.category, title: p.title, shotType})
       });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
@@ -338,9 +352,47 @@ function copyItem(productId, idx) {
   if (items[idx]) navigator.clipboard.writeText(items[idx]);
 }
 
+
+// ── Zoom Modal ──
+function showZoom(url, title) {
+  const modal = document.getElementById("zoom-modal");
+  document.getElementById("zoom-img").src = url;
+  document.getElementById("zoom-title").textContent = title || "";
+  document.getElementById("zoom-dl-btn").onclick = () => downloadImage(url, title);
+  modal.classList.remove("hidden");
+  modal.classList.add("flex");
+}
+
+function hideZoom() {
+  const modal = document.getElementById("zoom-modal");
+  modal.classList.add("hidden");
+  modal.classList.remove("flex");
+}
+
+function downloadImage(url, name) {
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = (name || "noholab-image").replace(/[^a-z0-9]/gi, "_").substring(0, 40) + ".png";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
 // Init
 renderCats();
 renderGrid();
 </script>
+
+<!-- Zoom Modal -->
+<div id="zoom-modal" class="hidden fixed inset-0 z-50 items-center justify-center bg-black/90" onclick="hideZoom()">
+  <div class="relative max-w-2xl w-full mx-4" onclick="event.stopPropagation()">
+    <button onclick="hideZoom()" class="absolute -top-10 right-0 text-zinc-400 hover:text-white text-2xl">✕</button>
+    <img id="zoom-img" src="" class="w-full rounded-xl border border-zinc-700 max-h-[80vh] object-contain bg-zinc-900">
+    <div class="flex items-center justify-between mt-3 px-1">
+      <p id="zoom-title" class="text-xs text-zinc-400 truncate flex-1 mr-3"></p>
+      <button id="zoom-dl-btn" class="text-xs px-4 py-2 rounded-lg bg-pink-900/60 hover:bg-pink-800 text-pink-300 border border-pink-700 shrink-0">⬇ Descargar</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
