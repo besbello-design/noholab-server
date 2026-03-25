@@ -50,6 +50,7 @@ app.get("/api/products", async (req, res) => {
     }));
     res.json({ products });
   } catch (e) {
+    console.error("[generate-image] ERROR:", e.message);
     res.status(500).json({ error: e.message });
   }
 });
@@ -132,6 +133,7 @@ app.post("/api/generate-image", async (req, res) => {
     const shot = catShots[shotType] || catShots.model1;
     const prompt = `${shot} Product name: ${title}. Final result must look like a luxury PD Paola campaign photo: clean, minimal, elegant, professional.`;
 
+    console.log("[generate-image] category:", category, "shotType:", shotType, "hasBase64:", !!imageBase64, "imageUrl:", imageUrl ? imageUrl.substring(0,80) : null);
     // Get image buffer
     let imgBuffer, ext;
     if (imageBase64) {
